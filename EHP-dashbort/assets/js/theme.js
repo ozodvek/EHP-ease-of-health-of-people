@@ -83,7 +83,10 @@ var getColors = function getColors(dom) {
     warning: getColor('warning', dom),
     danger: getColor('danger', dom),
     light: getColor('light', dom),
-    dark: getColor('dark', dom)
+    dark: getColor('dark', dom),
+    white: getColor('white', dom),
+    black: getColor('black', dom),
+    emphasis: getColor('emphasis-color', dom)
   };
 };
 var getSubtleColors = function getSubtleColors(dom) {
@@ -100,7 +103,6 @@ var getSubtleColors = function getSubtleColors(dom) {
 };
 var getGrays = function getGrays(dom) {
   return {
-    white: getColor('gray-white', dom),
     100: getColor('gray-100', dom),
     200: getColor('gray-200', dom),
     300: getColor('gray-300', dom),
@@ -111,8 +113,7 @@ var getGrays = function getGrays(dom) {
     800: getColor('gray-800', dom),
     900: getColor('gray-900', dom),
     1000: getColor('gray-1000', dom),
-    1100: getColor('gray-1100', dom),
-    black: getColor('gray-black', dom)
+    1100: getColor('gray-1100', dom)
   };
 };
 var hasClass = function hasClass(el, className) {
@@ -159,6 +160,9 @@ var getBreakpoint = function getBreakpoint(el) {
     }).pop().split('-').pop()];
   }
   return breakpoint;
+};
+var getSystemTheme = function getSystemTheme() {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
 
 /* --------------------------------- Cookie --------------------------------- */
@@ -272,7 +276,8 @@ var utils = {
   getDates: getDates,
   getPastDates: getPastDates,
   getRandomNumber: getRandomNumber,
-  removeClass: removeClass
+  removeClass: removeClass,
+  getSystemTheme: getSystemTheme
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1486,7 +1491,7 @@ var countupInit = function countupInit() {
 var dataTablesInit = function dataTablesInit() {
   if (window.jQuery) {
     var $ = window.jQuery;
-    var dataTables = $('.data-table');
+    var dataTables = $('[data-datatables]');
     var customDataTable = function customDataTable(elem) {
       elem.find('.pagination').addClass('pagination-sm');
     };
@@ -1494,7 +1499,7 @@ var dataTablesInit = function dataTablesInit() {
       var $this = $(value);
       var options = $.extend({
         dom: "<'row mx-0'<'col-md-6'l><'col-md-6'f>>" + "<'table-responsive scrollbar'tr>" + "<'row g-0 align-items-center justify-content-center justify-content-sm-between'<'col-auto mb-2 mb-sm-0 px-3'i><'col-auto px-3'p>>"
-      }, $this.data('options'));
+      }, $this.data('datatables'));
       $this.DataTable(options);
       var $wrpper = $this.closest('.dataTables_wrapper');
       customDataTable($wrpper);
@@ -1566,7 +1571,7 @@ var draggableInit = function draggableInit() {
 var dropdownMenuInit = function dropdownMenuInit() {
   // Only for ios
   if (window.is.ios()) {
-    var Event = {
+    var _Event = {
       SHOWN_BS_DROPDOWN: 'shown.bs.dropdown',
       HIDDEN_BS_DROPDOWN: 'hidden.bs.dropdown'
     };
@@ -1575,13 +1580,13 @@ var dropdownMenuInit = function dropdownMenuInit() {
       DROPDOWN_MENU: '.dropdown-menu'
     };
     document.querySelectorAll(Selector.TABLE_RESPONSIVE).forEach(function (table) {
-      table.addEventListener(Event.SHOWN_BS_DROPDOWN, function (e) {
+      table.addEventListener(_Event.SHOWN_BS_DROPDOWN, function (e) {
         var t = e.currentTarget;
         if (t.scrollWidth > t.clientWidth) {
           t.style.paddingBottom = "".concat(e.target.nextElementSibling.clientHeight, "px");
         }
       });
-      table.addEventListener(Event.HIDDEN_BS_DROPDOWN, function (e) {
+      table.addEventListener(_Event.HIDDEN_BS_DROPDOWN, function (e) {
         e.currentTarget.style.paddingBottom = '';
       });
     });
@@ -4310,6 +4315,7 @@ var navbarTopDropShadow = function navbarTopDropShadow() {
       $navbar && $navbar.classList.remove(ClassNames.NAVBAR_GLASS_SHADOW);
     }
   };
+  setDropShadow(html);
   window.addEventListener(Events.SCROLL, function () {
     setDropShadow(html);
   });
@@ -4713,6 +4719,7 @@ var swiperInit = function swiperInit() {
 };
 
 // export default themeControl;
+// eslint-disable-next-line
 
 /* -------------------------------------------------------------------------- */
 /*                                Theme Control                               */
@@ -4723,58 +4730,81 @@ var swiperInit = function swiperInit() {
 var initialDomSetup = function initialDomSetup(element) {
   if (!element) return;
   var dataUrlDom = element.querySelector('[data-theme-control = "navbarPosition"]');
-  var hasDataUrl = dataUrlDom ? getData(dataUrlDom, "page-url") : null;
-  element.querySelectorAll("[data-theme-control]").forEach(function (el) {
-    var inputDataAttributeValue = getData(el, "theme-control");
+  var hasDataUrl = dataUrlDom ? getData(dataUrlDom, 'page-url') : null;
+  element.querySelectorAll('[data-theme-control]').forEach(function (el) {
+    var inputDataAttributeValue = getData(el, 'theme-control');
     var localStorageValue = getItemFromStore(inputDataAttributeValue);
-    if (inputDataAttributeValue === "navbarStyle" && !hasDataUrl && (getItemFromStore("navbarPosition") === "top" || getItemFromStore("navbarPosition") === "double-top")) {
-      el.setAttribute("disabled", true);
+    if (inputDataAttributeValue === 'navbarStyle' && !hasDataUrl && (getItemFromStore('navbarPosition') === 'top' || getItemFromStore('navbarPosition') === 'double-top')) {
+      el.setAttribute('disabled', true);
     }
-    if (el.type === "select-one" && inputDataAttributeValue === "navbarPosition") {
+    if (el.type === 'select-one' && inputDataAttributeValue === 'navbarPosition') {
       el.value = localStorageValue;
     }
-    if (el.type === "checkbox") {
-      if (inputDataAttributeValue === "theme") {
-        localStorageValue === "dark" && el.setAttribute("checked", true);
+    if (el.type === 'checkbox') {
+      if (inputDataAttributeValue === 'theme') {
+        if (localStorageValue === 'auto' ? getSystemTheme() === 'dark' : localStorageValue === 'dark') {
+          el.setAttribute('checked', true);
+        }
       } else {
-        localStorageValue && el.setAttribute("checked", true);
+        localStorageValue && el.setAttribute('checked', true);
       }
-    } else {
+    } else if (el.type === 'radio') {
       var isChecked = localStorageValue === el.value;
-      isChecked && el.setAttribute("checked", true);
+      isChecked && el.setAttribute('checked', true);
+    } else {
+      var isActive = localStorageValue === el.value;
+      isActive && el.classList.add('active');
     }
   });
 };
 var changeTheme = function changeTheme(element) {
   element.querySelectorAll('[data-theme-control = "theme"]').forEach(function (el) {
-    var inputDataAttributeValue = getData(el, "theme-control");
+    var inputDataAttributeValue = getData(el, 'theme-control');
     var localStorageValue = getItemFromStore(inputDataAttributeValue);
-    if (el.type === "checkbox") {
-      localStorageValue === "dark" ? el.checked = true : el.checked = false;
-    } else {
+    if (el.type === 'checkbox') {
+      if (localStorageValue === 'auto') {
+        getSystemTheme() === 'dark' ? el.checked = true : el.checked = false;
+      } else {
+        localStorageValue === 'dark' ? el.checked = true : el.checked = false;
+      }
+    } else if (el.type === 'radio') {
       localStorageValue === el.value ? el.checked = true : el.checked = false;
+    } else {
+      localStorageValue === el.value ? el.classList.add('active') : el.classList.remove('active');
     }
   });
 };
+var localStorageValue = getItemFromStore('theme');
+var handleThemeDropdownIcon = function handleThemeDropdownIcon(value) {
+  document.querySelectorAll('[data-theme-dropdown-toggle-icon]').forEach(function (el) {
+    var theme = getData(el, 'theme-dropdown-toggle-icon');
+    if (value === theme) {
+      el.classList.remove('d-none');
+    } else {
+      el.classList.add('d-none');
+    }
+  });
+};
+handleThemeDropdownIcon(localStorageValue);
 var themeControl = function themeControl() {
   var themeController = new DomNode(document.body);
-  var navbarVertical = document.querySelector(".navbar-vertical");
+  var navbarVertical = document.querySelector('.navbar-vertical');
   initialDomSetup(themeController.node);
-  themeController.on("click", function (e) {
+  themeController.on('click', function (e) {
     var target = new DomNode(e.target);
-    if (target.data("theme-control")) {
-      var control = target.data("theme-control");
-      var value = e.target[e.target.type === "radio" ? "value" : "checked"];
-      if (control === "theme") {
-        typeof value === "boolean" && (value = value ? "dark" : "light");
+    if (target.data('theme-control')) {
+      var control = target.data('theme-control');
+      var value = e.target[e.target.type === 'checkbox' ? 'checked' : 'value'];
+      if (control === 'theme') {
+        typeof value === 'boolean' && (value = value ? 'dark' : 'light');
       }
-      if (control !== "navbarPosition") {
+      if (control !== 'navbarPosition') {
         CONFIG.hasOwnProperty(control) && setItemToStore(control, value);
         switch (control) {
-          case "theme":
+          case 'theme':
             {
-              document.documentElement.setAttribute("data-bs-theme", value);
-              var clickControl = new CustomEvent("clickControl", {
+              document.documentElement.setAttribute('data-bs-theme', value === 'auto' ? getSystemTheme() : value);
+              var clickControl = new CustomEvent('clickControl', {
                 detail: {
                   control: control,
                   value: value
@@ -4784,17 +4814,17 @@ var themeControl = function themeControl() {
               changeTheme(themeController.node);
               break;
             }
-          case "navbarStyle":
+          case 'navbarStyle':
             {
-              navbarVertical.classList.remove("navbar-card");
-              navbarVertical.classList.remove("navbar-inverted");
-              navbarVertical.classList.remove("navbar-vibrant");
-              if (value !== "transparent") {
+              navbarVertical.classList.remove('navbar-card');
+              navbarVertical.classList.remove('navbar-inverted');
+              navbarVertical.classList.remove('navbar-vibrant');
+              if (value !== 'transparent') {
                 navbarVertical.classList.add("navbar-".concat(value));
               }
               break;
             }
-          case "reset":
+          case 'reset':
             {
               Object.keys(CONFIG).forEach(function (key) {
                 localStorage.setItem(key, CONFIG[key]);
@@ -4810,12 +4840,20 @@ var themeControl = function themeControl() {
   });
 
   // control navbar position
-  themeController.on("change", function (e) {
+  themeController.on('change', function (e) {
     var target = new DomNode(e.target);
-    if (target.data("theme-control") === "navbarPosition") {
-      CONFIG.hasOwnProperty("navbarPosition") && setItemToStore("navbarPosition", e.target.value);
-      var pageUrl = getData(target.node.selectedOptions[0], "page-url");
-      !!pageUrl ? window.location.replace(pageUrl) : window.location.replace(window.location.href.split("#")[0]);
+    if (target.data('theme-control') === 'navbarPosition') {
+      CONFIG.hasOwnProperty('navbarPosition') && setItemToStore('navbarPosition', e.target.value);
+      var pageUrl = getData(target.node.selectedOptions[0], 'page-url');
+      !!pageUrl ? window.location.replace(pageUrl) : window.location.replace(window.location.href.split('#')[0]);
+    }
+  });
+  themeController.on('clickControl', function (_ref12) {
+    var _ref12$detail = _ref12.detail,
+      control = _ref12$detail.control,
+      value = _ref12$detail.value;
+    if (control === 'theme') {
+      handleThemeDropdownIcon(value);
     }
   });
 };
@@ -4834,7 +4872,7 @@ var tinymceInit = function tinymceInit() {
         height: '50vh',
         menubar: false,
         skin: utils.settings.tinymce.theme,
-        content_style: ".mce-content-body { color: ".concat(utils.getGrays().black, " }"),
+        content_style: ".mce-content-body { color: ".concat(utils.getColors().emphasis, "; background-color: ").concat(utils.getColor('tinymce-bg'), " }"),
         mobile: {
           theme: 'mobile',
           toolbar: ['undo', 'bold']
@@ -4852,11 +4890,11 @@ var tinymceInit = function tinymceInit() {
       });
     }
     var themeController = document.body;
-    themeController && themeController.addEventListener('clickControl', function (_ref12) {
-      var control = _ref12.detail.control;
+    themeController && themeController.addEventListener('clickControl', function (_ref13) {
+      var control = _ref13.detail.control;
       if (control === 'theme') {
         window.tinyMCE.editors.forEach(function (el) {
-          el.dom.addStyle(".mce-content-body{color: ".concat(utils.getGrays().black, " !important;}"));
+          el.dom.addStyle(".mce-content-body{color: ".concat(utils.getColors().emphasis, " !important; background-color: ").concat(utils.getColor('tinymce-bg'), " !important;}"));
         });
       }
     });
@@ -4896,7 +4934,7 @@ var tooltipInit = function tooltipInit() {
 /* eslint-disable no-param-reassign */
 
 /* -------------------------------------------------------------------------- */
-/*                                   Treeview                                   */
+/*                                   Treeview                                  */
 /* -------------------------------------------------------------------------- */
 var treeviewInit = function treeviewInit() {
   var Events = {
@@ -4974,7 +5012,7 @@ var treeviewInit = function treeviewInit() {
           if (striped) {
             makeStriped(treeview);
           } else {
-            e.path[2].classList.add(ClassName.TREEVIEW_BORDER_TRANSPARENT);
+            e.composedPath()[2].classList.add(ClassName.TREEVIEW_BORDER_TRANSPARENT);
           }
         });
         collapse.addEventListener(Events.HIDE_BS_COLLAPSE, function (e) {
@@ -4983,9 +5021,10 @@ var treeviewInit = function treeviewInit() {
           if (striped) {
             makeStriped(treeview);
           } else {
-            var childs = e.path[2].querySelectorAll(Selector.CHILD_SELECTOR);
-            if (!e.path[2].classList.contains(ClassName.TREEVIEW) && childs.length === 0) {
-              e.path[2].classList.remove(ClassName.TREEVIEW_BORDER_TRANSPARENT);
+            var childs = e.composedPath()[2].querySelectorAll(Selector.CHILD_SELECTOR);
+            // eslint-disable-next-line
+            if (!e.composedPath()[2].classList.contains(ClassName.TREEVIEW) && childs.length === 0) {
+              e.composedPath()[2].classList.remove(ClassName.TREEVIEW_BORDER_TRANSPARENT);
             }
           }
         });
@@ -5048,54 +5087,88 @@ var unresolvedTicketsTabInit = function unresolvedTicketsTabInit() {
 /* -------------------------------------------------------------------------- */
 /*                                 step wizard                                */
 /* -------------------------------------------------------------------------- */
-var wizardInit = function wizardInit() {
-  var wizards = document.querySelectorAll('.theme-wizard');
-  var tabPillEl = document.querySelectorAll('#pill-tab2 [data-bs-toggle="pill"]');
-  var tabProgressBar = document.querySelector('.theme-wizard .progress');
-  wizards.forEach(function (wizard) {
-    var tabToggleButtonEl = wizard.querySelectorAll('[data-wizard-step]');
-    var inputEmail = wizard.querySelector('[data-wizard-validate-email]');
-    var emailPattern = inputEmail.getAttribute('pattern');
-    var inputPassword = wizard.querySelector('[data-wizard-validate-password]');
-    var inputConfirmPassword = wizard.querySelector('[data-wizard-validate-confirm-password]');
-    var form = wizard.querySelector('[novalidate]');
-    var nextButton = wizard.querySelector('.next button');
-    var prevButton = wizard.querySelector('.previous button');
-    var cardFooter = wizard.querySelector('.theme-wizard .card-footer');
-    var count = 0;
-    var validatePattern = function validatePattern(pattern, value) {
-      var regexPattern = new RegExp(pattern);
-      return regexPattern.test(String(value).toLowerCase());
-    };
-    prevButton.classList.add('d-none');
+/* eslint-disable no-restricted-syntax */
+/* -------------------------------------------------------------------------- */
+/*                                 step wizard                                */
+/* -------------------------------------------------------------------------- */
 
-    // on button click tab change
-    nextButton.addEventListener('click', function () {
-      if ((!(inputEmail.value && validatePattern(emailPattern, inputEmail.value)) || !inputPassword.value || !inputConfirmPassword.value) && form.className.includes('needs-validation')) {
-        form.classList.add('was-validated');
-      } else {
+var wizardInit = function wizardInit() {
+  var getData = utils.getData;
+  var selectors = {
+    WIZARDS: '.theme-wizard',
+    TOGGLE_BUTTON_EL: '[data-wizard-step]',
+    FORMS: '[data-wizard-form]',
+    PASSWORD_INPUT: '[data-wizard-password]',
+    CONFIRM_PASSWORD_INPUT: '[data-wizard-confirm-password]',
+    NEXT_BTN: '.next button',
+    PREV_BTN: '.previous button',
+    FOOTER: '.theme-wizard .card-footer'
+  };
+  var events = {
+    SUBMIT: 'submit',
+    SHOW: 'show.bs.tab',
+    SHOWN: 'shown.bs.tab',
+    CLICK: 'click'
+  };
+  var wizards = document.querySelectorAll(selectors.WIZARDS);
+  wizards.forEach(function (wizard) {
+    var tabToggleButtonEl = wizard.querySelectorAll(selectors.TOGGLE_BUTTON_EL);
+    var forms = wizard.querySelectorAll(selectors.FORMS);
+    var passwordInput = wizard.querySelector(selectors.PASSWORD_INPUT);
+    var confirmPasswordInput = wizard.querySelector(selectors.CONFIRM_PASSWORD_INPUT);
+    var nextButton = wizard.querySelector(selectors.NEXT_BTN);
+    var prevButton = wizard.querySelector(selectors.PREV_BTN);
+    var wizardFooter = wizard.querySelector(selectors.FOOTER);
+    var submitEvent = new Event(events.SUBMIT, {
+      bubbles: true,
+      cancelable: true
+    });
+
+    // eslint-disable-next-line
+    var tabs = Array.from(tabToggleButtonEl).map(function (item) {
+      return window.bootstrap.Tab.getOrCreateInstance(item);
+    });
+    var count = 0;
+    var showEvent = null;
+    forms.forEach(function (form) {
+      form.addEventListener(events.SUBMIT, function (e) {
+        e.preventDefault();
+        if (form.classList.contains('needs-validation')) {
+          if (passwordInput && confirmPasswordInput) {
+            if (passwordInput.value !== confirmPasswordInput.value) {
+              confirmPasswordInput.setCustomValidity('Invalid field.');
+            } else {
+              confirmPasswordInput.setCustomValidity('');
+            }
+          }
+          if (!form.checkValidity()) {
+            showEvent.preventDefault();
+            return false;
+          }
+        }
         count += 1;
-        var tab = new window.bootstrap.Tab(tabToggleButtonEl[count]);
-        tab.show();
+        return null;
+      });
+    });
+    nextButton.addEventListener(events.CLICK, function () {
+      if (count + 1 < tabs.length) {
+        tabs[count + 1].show();
       }
     });
-    prevButton.addEventListener('click', function () {
+    prevButton.addEventListener(events.CLICK, function () {
       count -= 1;
-      var tab = new window.bootstrap.Tab(tabToggleButtonEl[count]);
-      tab.show();
+      tabs[count].show();
     });
     if (tabToggleButtonEl.length) {
       tabToggleButtonEl.forEach(function (item, index) {
-        /* eslint-disable */
-
-        item.addEventListener('shown.bs.tab', function (e) {
-          if ((!(inputEmail.value && validatePattern(emailPattern, inputEmail.value)) || !inputPassword.value || !inputConfirmPassword.value) && form.className.includes('needs-validation')) {
-            e.preventDefault();
-            form.classList.add('was-validated');
-            return null;
-            /* eslint-enable */
+        item.addEventListener(events.SHOW, function (e) {
+          var step = getData(item, 'wizard-step');
+          showEvent = e;
+          if (step > count) {
+            forms[count].dispatchEvent(submitEvent);
           }
-
+        });
+        item.addEventListener(events.SHOWN, function () {
           count = index;
           // can't go back tab
           if (count === tabToggleButtonEl.length - 1) {
@@ -5104,23 +5177,29 @@ var wizardInit = function wizardInit() {
               tab.setAttribute('data-bs-target', '#error-modal');
             });
           }
-          //add done class
+          // add done class
           for (var i = 0; i < count; i += 1) {
             tabToggleButtonEl[i].classList.add('done');
+            if (i > 0) {
+              tabToggleButtonEl[i - 1].classList.add('complete');
+            }
           }
-          //remove done class
+          // remove done class
           for (var j = count; j < tabToggleButtonEl.length; j += 1) {
             tabToggleButtonEl[j].classList.remove('done');
+            if (j > 0) {
+              tabToggleButtonEl[j - 1].classList.remove('complete');
+            }
           }
+
           // card footer remove at last step
           if (count > tabToggleButtonEl.length - 2) {
-            item.classList.add('done');
-            cardFooter.classList.add('d-none');
+            wizardFooter.classList.add('d-none');
           } else {
-            cardFooter.classList.remove('d-none');
+            wizardFooter.classList.remove('d-none');
           }
           // prev-button removing
-          if (count > 0) {
+          if (count > 0 && count !== tabToggleButtonEl.length - 1) {
             prevButton.classList.remove('d-none');
           } else {
             prevButton.classList.add('d-none');
@@ -5129,17 +5208,6 @@ var wizardInit = function wizardInit() {
       });
     }
   });
-
-  // control wizard progressbar
-  if (tabPillEl.length) {
-    var dividedProgressbar = 100 / tabPillEl.length;
-    tabProgressBar.querySelector('.progress-bar').style.width = "".concat(dividedProgressbar, "%");
-    tabPillEl.forEach(function (item, index) {
-      item.addEventListener('shown.bs.tab', function () {
-        tabProgressBar.querySelector('.progress-bar').style.width = "".concat(dividedProgressbar * (index + 1), "%");
-      });
-    });
-  }
 };
 var _window3 = window,
   dayjs = _window3.dayjs;
@@ -5361,8 +5429,8 @@ var appCalendarInit = function appCalendarInit() {
       window.bootstrap.Modal.getInstance(addEventModal).hide();
     });
   }
-  addEventModal && addEventModal.addEventListener(Events.SHOWN_BS_MODAL, function (_ref13) {
-    var currentTarget = _ref13.currentTarget;
+  addEventModal && addEventModal.addEventListener(Events.SHOWN_BS_MODAL, function (_ref14) {
+    var currentTarget = _ref14.currentTarget;
     currentTarget.querySelector(Selectors.INPUT_TITLE).focus();
   });
 };
@@ -5557,9 +5625,651 @@ var getStackIcon = function getStackIcon(icon, transform) {
   return "\n  <span class=\"fa-stack ms-n1 me-3\">\n    <i class=\"fas fa-circle fa-stack-2x text-200\"></i>\n    <i class=\"".concat(icon, " fa-stack-1x text-primary\" data-fa-transform=").concat(transform, "></i>\n  </span>\n");
 };
 var getTemplate = function getTemplate(event) {
-  return "\n<div class=\"modal-header bg-light ps-card pe-5 border-bottom-0\">\n  <div>\n    <h5 class=\"modal-title mb-0\">".concat(event.title, "</h5>\n    ").concat(event.extendedProps.organizer ? "<p class=\"mb-0 fs--1 mt-1\">\n        by <a href=\"#!\">".concat(event.extendedProps.organizer, "</a>\n      </p>") : '', "\n  </div>\n  <button type=\"button\" class=\"btn-close position-absolute end-0 top-0 mt-3 me-3\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>\n</div>\n<div class=\"modal-body px-card pb-card pt-1 fs--1\">\n  ").concat(event.extendedProps.description ? "\n      <div class=\"d-flex mt-3\">\n        ".concat(getStackIcon('fas fa-align-left'), "\n        <div class=\"flex-1\">\n          <h6>Description</h6>\n          <p class=\"mb-0\">\n            \n          ").concat(event.extendedProps.description.split(' ').slice(0, 30).join(' '), "\n          </p>\n        </div>\n      </div>\n    ") : '', " \n  <div class=\"d-flex mt-3\">\n    ").concat(getStackIcon('fas fa-calendar-check'), "\n    <div class=\"flex-1\">\n        <h6>Date and Time</h6>\n        <p class=\"mb-1\">\n          ").concat(window.dayjs && window.dayjs(event.start).format('dddd, MMMM D, YYYY, h:mm A'), " \n          ").concat(event.end ? "\u2013 <br/>".concat(window.dayjs && window.dayjs(event.end).subtract(1, 'day').format('dddd, MMMM D, YYYY, h:mm A')) : '', "\n        </p>\n    </div>\n  </div>\n  ").concat(event.extendedProps.location ? "\n        <div class=\"d-flex mt-3\">\n          ".concat(getStackIcon('fas fa-map-marker-alt'), "\n          <div class=\"flex-1\">\n              <h6>Location</h6>\n              <p class=\"mb-0\">").concat(event.extendedProps.location, "</p>\n          </div>\n        </div>\n      ") : '', "\n  ").concat(event.schedules ? "\n        <div class=\"d-flex mt-3\">\n        ".concat(getStackIcon('fas fa-clock'), "\n        <div class=\"flex-1\">\n            <h6>Schedule</h6>\n            \n            <ul class=\"list-unstyled timeline mb-0\">\n              ").concat(event.schedules.map(function (schedule) {
+  return "\n<div class=\"modal-header bg-body-tertiary ps-card pe-5 border-bottom-0\">\n  <div>\n    <h5 class=\"modal-title mb-0\">".concat(event.title, "</h5>\n    ").concat(event.extendedProps.organizer ? "<p class=\"mb-0 fs--1 mt-1\">\n        by <a href=\"#!\">".concat(event.extendedProps.organizer, "</a>\n      </p>") : '', "\n  </div>\n  <button type=\"button\" class=\"btn-close position-absolute end-0 top-0 mt-3 me-3\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>\n</div>\n<div class=\"modal-body px-card pb-card pt-1 fs--1\">\n  ").concat(event.extendedProps.description ? "\n      <div class=\"d-flex mt-3\">\n        ".concat(getStackIcon('fas fa-align-left'), "\n        <div class=\"flex-1\">\n          <h6>Description</h6>\n          <p class=\"mb-0\">\n            \n          ").concat(event.extendedProps.description.split(' ').slice(0, 30).join(' '), "\n          </p>\n        </div>\n      </div>\n    ") : '', " \n  <div class=\"d-flex mt-3\">\n    ").concat(getStackIcon('fas fa-calendar-check'), "\n    <div class=\"flex-1\">\n        <h6>Date and Time</h6>\n        <p class=\"mb-1\">\n          ").concat(window.dayjs && window.dayjs(event.start).format('dddd, MMMM D, YYYY, h:mm A'), " \n          ").concat(event.end ? "\u2013 <br/>".concat(window.dayjs && window.dayjs(event.end).subtract(1, 'day').format('dddd, MMMM D, YYYY, h:mm A')) : '', "\n        </p>\n    </div>\n  </div>\n  ").concat(event.extendedProps.location ? "\n        <div class=\"d-flex mt-3\">\n          ".concat(getStackIcon('fas fa-map-marker-alt'), "\n          <div class=\"flex-1\">\n              <h6>Location</h6>\n              <p class=\"mb-0\">").concat(event.extendedProps.location, "</p>\n          </div>\n        </div>\n      ") : '', "\n  ").concat(event.schedules ? "\n        <div class=\"d-flex mt-3\">\n        ".concat(getStackIcon('fas fa-clock'), "\n        <div class=\"flex-1\">\n            <h6>Schedule</h6>\n            \n            <ul class=\"list-unstyled timeline mb-0\">\n              ").concat(event.schedules.map(function (schedule) {
     return "<li>".concat(schedule.title, "</li>");
-  }).join(''), "\n            </ul>\n        </div>\n      ") : '', "\n  </div>\n</div>\n<div class=\"modal-footer d-flex justify-content-end bg-light px-card border-top-0\">\n  <a href=\"").concat(document.location.href.split('/').slice(0, 5).join('/'), "/app/events/create-an-event.html\" class=\"btn btn-falcon-default btn-sm\">\n    <span class=\"fas fa-pencil-alt fs--2 mr-2\"></span> Edit\n  </a>\n  <a href='").concat(document.location.href.split('/').slice(0, 5).join('/'), "/app/events/event-detail.html' class=\"btn btn-falcon-primary btn-sm\">\n    See more details\n    <span class=\"fas fa-angle-right fs--2 ml-1\"></span>\n  </a>\n</div>\n");
+  }).join(''), "\n            </ul>\n        </div>\n      ") : '', "\n  </div>\n</div>\n<div class=\"modal-footer d-flex justify-content-end bg-body-tertiary px-card border-top-0\">\n  <a href=\"").concat(document.location.href.split('/').slice(0, 5).join('/'), "/app/events/create-an-event.html\" class=\"btn btn-falcon-default btn-sm\">\n    <span class=\"fas fa-pencil-alt fs--2 mr-2\"></span> Edit\n  </a>\n  <a href='").concat(document.location.href.split('/').slice(0, 5).join('/'), "/app/events/event-detail.html' class=\"btn btn-falcon-primary btn-sm\">\n    See more details\n    <span class=\"fas fa-angle-right fs--2 ml-1\"></span>\n  </a>\n</div>\n");
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                  bar-chart                                 */
+/* -------------------------------------------------------------------------- */
+
+var barChartInit = function barChartInit() {
+  var barChartElement = document.getElementById('chartjs-bar-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'bar',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        datasets: [{
+          label: '# of Votes',
+          data: [12, 19, 3, 5, 6, 3],
+          backgroundColor: [utils.getSubtleColors().secondary, utils.getSubtleColors().warning, utils.getSubtleColors().info, utils.getSubtleColors().success, utils.getSubtleColors().info, utils.getSubtleColors().primary],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        plugins: {
+          tooltip: chartJsDefaultTooltip(),
+          legend: {
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          },
+          y: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          }
+        }
+      }
+    };
+  };
+  chartJsInit(barChartElement, getOptions);
+};
+
+/* eslint-disable */
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Bubble                                    */
+/* -------------------------------------------------------------------------- */
+
+var chartBubble = function chartBubble() {
+  var pie = document.getElementById('chartjs-bubble-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'bubble',
+      data: {
+        datasets: [{
+          label: 'Dataset 1',
+          data: getBubbleDataset(5, 5, 15, 0, 100),
+          backgroundColor: utils.getColor('info'),
+          hoverBackgroundColor: utils.getColor('info')
+        }, {
+          label: 'Dataset 2',
+          data: getBubbleDataset(5, 5, 15, 0, 100),
+          backgroundColor: utils.getColor('success'),
+          hoverBackgroundColor: utils.getColor('success')
+        }, {
+          label: 'Dataset 3',
+          data: getBubbleDataset(5, 5, 15, 0, 100),
+          backgroundColor: utils.getColor('warning'),
+          hoverBackgroundColor: utils.getColor('warning')
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          },
+          tooltip: chartJsDefaultTooltip()
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          },
+          y: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          }
+        }
+      }
+    };
+  };
+  chartJsInit(pie, getOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Combo                                  */
+/* -------------------------------------------------------------------------- */
+var chartCombo = function chartCombo() {
+  var combo = document.getElementById('chartjs-combo-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'bar',
+      data: {
+        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+        datasets: [{
+          type: 'line',
+          label: 'Dataset 1',
+          borderColor: utils.getColor('primary'),
+          borderWidth: 2,
+          fill: false,
+          data: [55, 80, -60, -22, -50, 40, 90]
+        }, {
+          type: 'bar',
+          label: 'Dataset 2',
+          backgroundColor: utils.getSubtleColors().danger,
+          data: [4, -80, 90, -22, 70, 35, -50],
+          borderWidth: 1
+        }, {
+          type: 'bar',
+          label: 'Dataset 3',
+          backgroundColor: utils.getSubtleColors().primary,
+          data: [-30, 30, -18, 100, -45, -25, -50],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: chartJsDefaultTooltip(),
+          legend: {
+            position: 'top',
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          },
+          y: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          }
+        }
+      }
+    };
+  };
+  chartJsInit(combo, getOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Doughnut                                  */
+/* -------------------------------------------------------------------------- */
+var chartDoughnut = function chartDoughnut() {
+  var doughnut = document.getElementById('chartjs-doughnut-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [5, 3, 2, 1, 1],
+          backgroundColor: [utils.rgbaColor(utils.getColor('facebook'), 0.75), utils.rgbaColor(utils.getColor('youtube'), 0.75), utils.rgbaColor(utils.getColor('twitter'), 0.75), utils.rgbaColor(utils.getColor('linkedin'), 0.75), utils.rgbaColor(utils.getColor('github'), 0.75)],
+          borderWidth: 1,
+          borderColor: utils.getGrays()['100']
+        }],
+        labels: ['Facebook', 'Youtube', 'Twitter', 'Linkedin', 'GitHub']
+      },
+      options: {
+        plugins: {
+          tooltip: chartJsDefaultTooltip(),
+          legend: {
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          }
+        },
+        maintainAspectRatio: false
+      }
+    };
+  };
+  chartJsInit(doughnut, getOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Half Doughnut                             */
+/* -------------------------------------------------------------------------- */
+var chartHalfDoughnutInit = function chartHalfDoughnutInit() {
+  var $chartHalfDoughnuts = document.querySelectorAll('[data-half-doughnut]');
+  $chartHalfDoughnuts.forEach(function ($chartHalfDoughnut) {
+    if ($chartHalfDoughnut) {
+      var getOptions = function getOptions() {
+        var userOptions = utils.getData($chartHalfDoughnut, 'half-doughnut');
+        var defaultOptions = {
+          type: 'doughnut',
+          data: {
+            labels: ['Reached', 'Target'],
+            datasets: [{
+              data: [50, 50],
+              backgroundColor: ['primary', 'gray-300'],
+              borderWidth: [0, 0, 0, 0]
+            }]
+          },
+          options: {
+            rotation: -90,
+            circumference: '180',
+            cutout: '80%',
+            hover: {
+              mode: null
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                enabled: false
+              }
+            }
+          }
+        };
+        var options = window._.merge(defaultOptions, userOptions);
+        var mergedDatasets = options.data.datasets[0];
+        mergedDatasets.backgroundColor = [utils.getColor(mergedDatasets.backgroundColor[0]), utils.getColor(mergedDatasets.backgroundColor[1])];
+        return options;
+      };
+      chartJsInit($chartHalfDoughnut, getOptions);
+    }
+  });
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Line                                  */
+/* -------------------------------------------------------------------------- */
+var chartLine = function chartLine() {
+  var line = document.getElementById('chartjs-line-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'bar',
+      data: {
+        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+        datasets: [{
+          type: 'line',
+          label: 'Dataset 1',
+          borderColor: utils.getColor('primary'),
+          borderWidth: 2,
+          fill: false,
+          data: [55, 80, 60, 22, 50, 40, 90],
+          tension: 0.3
+        }]
+      },
+      options: {
+        plugins: {
+          tooltip: chartJsDefaultTooltip(),
+          legend: {
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          },
+          y: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          }
+        }
+      }
+    };
+  };
+  chartJsInit(line, getOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Pie                                  */
+/* -------------------------------------------------------------------------- */
+var chartPie = function chartPie() {
+  var pie = document.getElementById('chartjs-pie-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'pie',
+      data: {
+        datasets: [{
+          data: [5, 3, 2, 1, 1],
+          backgroundColor: [utils.rgbaColor(utils.getColor('facebook'), 0.75), utils.rgbaColor(utils.getColor('youtube'), 0.75), utils.rgbaColor(utils.getColor('twitter'), 0.75), utils.rgbaColor(utils.getColor('linkedin'), 0.75), utils.rgbaColor(utils.getColor('github'), 0.75)],
+          borderWidth: 1,
+          borderColor: utils.getGrays()['100']
+        }],
+        labels: ['Facebook', 'Youtube', 'Twitter', 'Linkedin', 'GitHub']
+      },
+      options: {
+        plugins: {
+          tooltip: chartJsDefaultTooltip(),
+          legend: {
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          }
+        },
+        maintainAspectRatio: false
+      }
+    };
+  };
+  chartJsInit(pie, getOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Polar                                  */
+/* -------------------------------------------------------------------------- */
+var chartPolar = function chartPolar() {
+  var polar = document.getElementById('chartjs-polar-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'polarArea',
+      data: {
+        datasets: [{
+          data: [10, 20, 50, 40, 30],
+          backgroundColor: [utils.rgbaColor(utils.getColor('facebook'), 0.5), utils.rgbaColor(utils.getColor('youtube'), 0.5), utils.rgbaColor(utils.getColor('twitter'), 0.5), utils.rgbaColor(utils.getColor('linkedin'), 0.5), utils.rgbaColor(utils.getColor('success'), 0.5)],
+          borderWidth: 1,
+          borderColor: utils.getGrays()['400']
+        }],
+        labels: ['Facebook', 'Youtube', 'Twitter', 'Linkedin', 'Medium']
+      },
+      options: {
+        plugins: {
+          tooltip: chartJsDefaultTooltip(),
+          legend: {
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          }
+        },
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            grid: {
+              color: utils.getGrays()['300']
+            }
+          }
+        }
+      }
+    };
+  };
+  chartJsInit(polar, getOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Radar                                  */
+/* -------------------------------------------------------------------------- */
+var chartRadar = function chartRadar() {
+  var radar = document.getElementById('chartjs-radar-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'radar',
+      data: {
+        labels: ['English', 'Maths', 'Physics', 'Chemistry', 'Biology', 'History'],
+        datasets: [{
+          label: 'Student A',
+          backgroundColor: utils.rgbaColor(utils.getColor('success'), 0.5),
+          data: [65, 75, 70, 80, 60, 80],
+          borderWidth: 1
+        }, {
+          label: 'Student B',
+          backgroundColor: utils.rgbaColor(utils.getColor('primary'), 0.5),
+          data: [54, 65, 60, 70, 70, 75],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        plugins: {
+          tooltip: chartJsDefaultTooltip(),
+          legend: {
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          }
+        },
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            grid: {
+              color: utils.getGrays()['300']
+            }
+          }
+        }
+      }
+    };
+  };
+  chartJsInit(radar, getOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Scatter                                   */
+/* -------------------------------------------------------------------------- */
+var chartScatter = function chartScatter() {
+  var scatter = document.getElementById('chartjs-scatter-chart');
+  var getOptions = function getOptions() {
+    return {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Dataset one',
+          data: [{
+            x: -98,
+            y: 42
+          }, {
+            x: -85,
+            y: -29
+          }, {
+            x: -87,
+            y: -70
+          }, {
+            x: -53,
+            y: 28
+          }, {
+            x: -29,
+            y: 4
+          }, {
+            x: -2,
+            y: -42
+          }, {
+            x: 5,
+            y: 3
+          }, {
+            x: 39,
+            y: 19
+          }, {
+            x: 49,
+            y: 79
+          }, {
+            x: 83,
+            y: -9
+          }, {
+            x: 93,
+            y: 12
+          }],
+          pointBackgroundColor: utils.getColor('primary'),
+          borderColor: utils.getColor('primary'),
+          borderWidth: 1
+        }, {
+          label: 'Dataset Two',
+          data: [{
+            x: 53,
+            y: 12
+          }, {
+            x: -78,
+            y: 42
+          }, {
+            x: -65,
+            y: -39
+          }, {
+            x: -57,
+            y: -20
+          }, {
+            x: 57,
+            y: 28
+          }, {
+            x: -35,
+            y: 75
+          }, {
+            x: -29,
+            y: -43
+          }, {
+            x: 15,
+            y: 31
+          }, {
+            x: 97,
+            y: 19
+          }, {
+            x: 49,
+            y: 69
+          }, {
+            x: 33,
+            y: -57
+          }],
+          pointBackgroundColor: utils.getColor('warning'),
+          borderColor: utils.getColor('warning'),
+          borderWidth: 1,
+          borderRadius: '50%'
+        }]
+      },
+      options: {
+        plugins: {
+          tooltip: chartJsDefaultTooltip(),
+          legend: {
+            labels: {
+              color: utils.getGrays()['500']
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          },
+          y: {
+            ticks: {
+              color: utils.getGrays()['500']
+            },
+            grid: {
+              color: utils.getGrays()['300'],
+              drawBorder: false
+            }
+          }
+        },
+        animation: {
+          duration: 2000
+        }
+      }
+    };
+  };
+  chartJsInit(scatter, getOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                            ChartJs Initialization                          */
+/* -------------------------------------------------------------------------- */
+
+var chartJsInit = function chartJsInit(chartEl, config) {
+  if (!chartEl) return;
+  var ctx = chartEl.getContext('2d');
+  var chart = new window.Chart(ctx, config());
+  var themeController = document.body;
+  themeController.addEventListener('clickControl', function (_ref15) {
+    var control = _ref15.detail.control;
+    if (control === 'theme') {
+      chart.destroy();
+      chart = new window.Chart(ctx, config());
+    }
+    return null;
+  });
+};
+var chartJsDefaultTooltip = function chartJsDefaultTooltip() {
+  return {
+    backgroundColor: utils.getGrays()['100'],
+    borderColor: utils.getGrays()['300'],
+    borderWidth: 1,
+    titleColor: utils.getColors().emphasis,
+    callbacks: {
+      labelTextColor: function labelTextColor() {
+        return utils.getColors().emphasis;
+      }
+    }
+  };
+};
+var getBubbleDataset = function getBubbleDataset(count, rmin, rmax, min, max) {
+  var arr = Array.from(Array(count).keys());
+  return arr.map(function () {
+    return {
+      x: utils.getRandomNumber(min, max),
+      y: utils.getRandomNumber(min, max),
+      r: utils.getRandomNumber(rmin, rmax)
+    };
+  });
+};
+
+/* eslint-disable */
+
+/* -------------------------------------------------------------------------- */
+/*                            Chart Scatter                                   */
+/* -------------------------------------------------------------------------- */
+var productShareDoughnutInit = function productShareDoughnutInit() {
+  var marketShareDoughnutElement = document.getElementById('marketShareDoughnut');
+  var getOptions = function getOptions() {
+    return {
+      type: 'doughnut',
+      data: {
+        labels: ['Flacon', 'Sparrow'],
+        datasets: [{
+          data: [50, 88],
+          backgroundColor: [utils.getColor('primary'), utils.getColor('gray-300')],
+          borderColor: [utils.getColor('primary'), utils.getColor('gray-300')]
+        }]
+      },
+      options: {
+        tooltips: chartJsDefaultTooltip(),
+        rotation: -90,
+        circumference: '180',
+        cutout: '80%',
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    };
+  };
+  chartJsInit(marketShareDoughnutElement, getOptions);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -5919,566 +6629,6 @@ var trendingKeywordsInit = function trendingKeywordsInit() {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                                  bar-chart                                 */
-/* -------------------------------------------------------------------------- */
-
-var barChartInit = function barChartInit() {
-  var barChartElement = document.getElementById('chartjs-bar-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'bar',
-      data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{
-          label: '# of Votes',
-          data: [12, 19, 3, 5, 6, 3],
-          backgroundColor: [utils.rgbaColor(utils.getColor('secondary'), 0.2), utils.rgbaColor(utils.getColor('warning'), 0.2), utils.rgbaColor(utils.getColor('info'), 0.2), utils.rgbaColor(utils.getColor('success'), 0.2), utils.rgbaColor(utils.getColor('info'), 0.2), utils.rgbaColor(utils.getColor('primary'), 0.2)],
-          borderColor: [utils.getColor('secondary'), utils.getColor('warning'), utils.getColor('info'), utils.getColor('success'), utils.getColor('info'), utils.getColor('primary')],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        plugins: {
-          tooltip: chartJsDefaultTooltip()
-        },
-        scales: {
-          x: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          },
-          y: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1),
-              drawBorder: true
-            }
-          }
-        }
-      }
-    };
-  };
-  chartJsInit(barChartElement, getOptions);
-};
-
-/* eslint-disable */
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Bubble                                    */
-/* -------------------------------------------------------------------------- */
-
-var chartBubble = function chartBubble() {
-  var pie = document.getElementById('chartjs-bubble-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'bubble',
-      data: {
-        datasets: [{
-          label: 'Dataset 1',
-          data: getBubbleDataset(5, 5, 15, 0, 100),
-          backgroundColor: utils.getSubtleColors()['primary'],
-          hoverBackgroundColor: utils.getColors()['primary']
-        }, {
-          label: 'Dataset 2',
-          data: getBubbleDataset(5, 5, 15, 0, 100),
-          backgroundColor: utils.getSubtleColors()['success'],
-          hoverBackgroundColor: utils.getColors()['success']
-        }, {
-          label: 'Dataset 3',
-          data: getBubbleDataset(5, 5, 15, 0, 100),
-          backgroundColor: utils.getSubtleColors()['danger'],
-          hoverBackgroundColor: utils.getColors()['danger']
-        }]
-      },
-      options: {
-        plugins: {
-          legend: {
-            position: 'top'
-          },
-          tooltip: chartJsDefaultTooltip()
-        },
-        scales: {
-          x: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays()['black'], 0.1)
-            }
-          },
-          y: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays()['black'], 0.1)
-            }
-          }
-        }
-      }
-    };
-  };
-  chartJsInit(pie, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Combo                                  */
-/* -------------------------------------------------------------------------- */
-var chartCombo = function chartCombo() {
-  var combo = document.getElementById('chartjs-combo-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'bar',
-      data: {
-        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-        datasets: [{
-          type: 'line',
-          label: 'Dataset 1',
-          borderColor: utils.getColor('primary'),
-          borderWidth: 2,
-          fill: false,
-          data: [55, 80, -60, -22, -50, 40, 90]
-        }, {
-          type: 'bar',
-          label: 'Dataset 2',
-          backgroundColor: utils.getSubtleColors().danger,
-          data: [4, -80, 90, -22, 70, 35, -50],
-          borderWidth: 1
-        }, {
-          type: 'bar',
-          label: 'Dataset 3',
-          backgroundColor: utils.getSubtleColors().primary,
-          data: [-30, 30, -18, 100, -45, -25, -50],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        maintainAspectRatio: false,
-        plugins: {
-          tooltip: chartJsDefaultTooltip()
-        },
-        scales: {
-          x: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          },
-          y: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          }
-        }
-      }
-    };
-  };
-  chartJsInit(combo, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Doughnut                                  */
-/* -------------------------------------------------------------------------- */
-var chartDoughnut = function chartDoughnut() {
-  var doughnut = document.getElementById('chartjs-doughnut-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'doughnut',
-      data: {
-        datasets: [{
-          data: [5, 3, 2, 1, 1],
-          backgroundColor: [utils.rgbaColor(utils.getColor('facebook'), 0.2), utils.rgbaColor(utils.getColor('youtube'), 0.2), utils.rgbaColor(utils.getColor('twitter'), 0.2), utils.rgbaColor(utils.getColor('linkedin'), 0.2), utils.rgbaColor(utils.getColor('github'), 0.2)],
-          borderWidth: 1,
-          borderColor: [utils.getColor('facebook'), utils.getColor('youtube'), utils.getColor('twitter'), utils.getColor('linkedin'), utils.getColor('github')]
-        }],
-        labels: ['Facebook', 'Youtube', 'Twitter', 'Linkedin', 'GitHub']
-      },
-      options: {
-        plugins: {
-          tooltip: chartJsDefaultTooltip()
-        },
-        maintainAspectRatio: false
-      }
-    };
-  };
-  chartJsInit(doughnut, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Half Doughnut                             */
-/* -------------------------------------------------------------------------- */
-var chartHalfDoughnutInit = function chartHalfDoughnutInit() {
-  var $chartHalfDoughnuts = document.querySelectorAll('[data-half-doughnut]');
-  $chartHalfDoughnuts.forEach(function ($chartHalfDoughnut) {
-    if ($chartHalfDoughnut) {
-      var getOptions = function getOptions() {
-        var userOptions = utils.getData($chartHalfDoughnut, 'half-doughnut');
-        var defaultOptions = {
-          type: 'doughnut',
-          data: {
-            labels: ['Reached', 'Target'],
-            datasets: [{
-              data: [50, 50],
-              backgroundColor: ['primary', 'gray-300'],
-              borderWidth: [0, 0, 0, 0]
-            }]
-          },
-          options: {
-            rotation: -90,
-            circumference: '180',
-            cutout: '80%',
-            hover: {
-              mode: null
-            },
-            plugins: {
-              legend: {
-                display: false
-              },
-              tooltip: {
-                enabled: false
-              }
-            }
-          }
-        };
-        var options = window._.merge(defaultOptions, userOptions);
-        var mergedDatasets = options.data.datasets[0];
-        mergedDatasets.backgroundColor = [utils.getColor(mergedDatasets.backgroundColor[0]), utils.getColor(mergedDatasets.backgroundColor[1])];
-        return options;
-      };
-      chartJsInit($chartHalfDoughnut, getOptions);
-    }
-  });
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Line                                  */
-/* -------------------------------------------------------------------------- */
-var chartLine = function chartLine() {
-  var line = document.getElementById('chartjs-line-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'bar',
-      data: {
-        labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-        datasets: [{
-          type: 'line',
-          label: 'Dataset 1',
-          borderColor: utils.getColor('primary'),
-          borderWidth: 2,
-          fill: false,
-          data: [55, 80, 60, 22, 50, 40, 90],
-          tension: 0.3
-        }]
-      },
-      options: {
-        plugins: {
-          tooltip: chartJsDefaultTooltip()
-        },
-        scales: {
-          x: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          },
-          y: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          }
-        }
-      }
-    };
-  };
-  chartJsInit(line, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Pie                                  */
-/* -------------------------------------------------------------------------- */
-var chartPie = function chartPie() {
-  var pie = document.getElementById('chartjs-pie-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'pie',
-      data: {
-        datasets: [{
-          data: [5, 3, 2, 1, 1],
-          backgroundColor: [utils.rgbaColor(utils.getColor('facebook'), 0.75), utils.rgbaColor(utils.getColor('youtube'), 0.75), utils.rgbaColor(utils.getColor('twitter'), 0.75), utils.rgbaColor(utils.getColor('linkedin'), 0.75), utils.rgbaColor(utils.getColor('github'), 0.75)],
-          borderWidth: 1,
-          borderColor: utils.getGrays()['100']
-        }],
-        labels: ['Facebook', 'Youtube', 'Twitter', 'Linkedin', 'GitHub']
-      },
-      options: {
-        plugins: {
-          tooltip: chartJsDefaultTooltip()
-        },
-        maintainAspectRatio: false
-      }
-    };
-  };
-  chartJsInit(pie, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Polar                                  */
-/* -------------------------------------------------------------------------- */
-var chartPolar = function chartPolar() {
-  var polar = document.getElementById('chartjs-polar-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'polarArea',
-      data: {
-        datasets: [{
-          data: [10, 20, 50, 40, 30],
-          backgroundColor: [utils.rgbaColor(utils.getColor('facebook'), 0.5), utils.rgbaColor(utils.getColor('youtube'), 0.5), utils.rgbaColor(utils.getColor('twitter'), 0.5), utils.rgbaColor(utils.getColor('linkedin'), 0.5), utils.rgbaColor(utils.getColor('success'), 0.5)],
-          borderWidth: 1,
-          borderColor: utils.getGrays()['400']
-        }],
-        labels: ['Facebook', 'Youtube', 'Twitter', 'Linkedin', 'Medium']
-      },
-      options: {
-        plugins: {
-          tooltip: chartJsDefaultTooltip()
-        },
-        maintainAspectRatio: false,
-        scales: {
-          r: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          }
-        }
-      }
-    };
-  };
-  chartJsInit(polar, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Radar                                  */
-/* -------------------------------------------------------------------------- */
-var chartRadar = function chartRadar() {
-  var radar = document.getElementById('chartjs-radar-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'radar',
-      data: {
-        labels: ['English', 'Maths', 'Physics', 'Chemistry', 'Biology', 'History'],
-        datasets: [{
-          label: 'Student A',
-          backgroundColor: utils.rgbaColor(utils.getColor('success'), 0.5),
-          data: [65, 75, 70, 80, 60, 80],
-          borderWidth: 1
-        }, {
-          label: 'Student B',
-          backgroundColor: utils.rgbaColor(utils.getColor('primary'), 0.5),
-          data: [54, 65, 60, 70, 70, 75],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        plugins: {
-          tooltip: chartJsDefaultTooltip()
-        },
-        maintainAspectRatio: false,
-        scales: {
-          r: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          }
-        }
-      }
-    };
-  };
-  chartJsInit(radar, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Scatter                                   */
-/* -------------------------------------------------------------------------- */
-var chartScatter = function chartScatter() {
-  var scatter = document.getElementById('chartjs-scatter-chart');
-  var getOptions = function getOptions() {
-    return {
-      type: 'scatter',
-      data: {
-        datasets: [{
-          label: 'Dataset one',
-          data: [{
-            x: -98,
-            y: 42
-          }, {
-            x: -85,
-            y: -29
-          }, {
-            x: -87,
-            y: -70
-          }, {
-            x: -53,
-            y: 28
-          }, {
-            x: -29,
-            y: 4
-          }, {
-            x: -2,
-            y: -42
-          }, {
-            x: 5,
-            y: 3
-          }, {
-            x: 39,
-            y: 19
-          }, {
-            x: 49,
-            y: 79
-          }, {
-            x: 83,
-            y: -9
-          }, {
-            x: 93,
-            y: 12
-          }],
-          pointBackgroundColor: utils.getColor('primary'),
-          borderColor: utils.getColor('primary'),
-          borderWidth: 1
-        }, {
-          label: 'Dataset Two',
-          data: [{
-            x: 53,
-            y: 12
-          }, {
-            x: -78,
-            y: 42
-          }, {
-            x: -65,
-            y: -39
-          }, {
-            x: -57,
-            y: -20
-          }, {
-            x: 57,
-            y: 28
-          }, {
-            x: -35,
-            y: 75
-          }, {
-            x: -29,
-            y: -43
-          }, {
-            x: 15,
-            y: 31
-          }, {
-            x: 97,
-            y: 19
-          }, {
-            x: 49,
-            y: 69
-          }, {
-            x: 33,
-            y: -57
-          }],
-          pointBackgroundColor: utils.getColor('warning'),
-          borderColor: utils.getColor('warning'),
-          borderWidth: 1,
-          borderRadius: '50%'
-        }]
-      },
-      options: {
-        plugins: {
-          tooltip: chartJsDefaultTooltip()
-        },
-        scales: {
-          x: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          },
-          y: {
-            grid: {
-              color: utils.rgbaColor(utils.getGrays().black, 0.1)
-            }
-          }
-        },
-        animation: {
-          duration: 2000
-        }
-      }
-    };
-  };
-  chartJsInit(scatter, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
-/*                            ChartJs Initialization                          */
-/* -------------------------------------------------------------------------- */
-
-var chartJsInit = function chartJsInit(chartEl, config) {
-  if (!chartEl) return;
-  var ctx = chartEl.getContext('2d');
-  var chart = new window.Chart(ctx, config());
-  var themeController = document.body;
-  themeController.addEventListener('clickControl', function (_ref14) {
-    var control = _ref14.detail.control;
-    if (control === 'theme') {
-      chart.destroy();
-      chart = new window.Chart(ctx, config());
-    }
-    return null;
-  });
-};
-var chartJsDefaultTooltip = function chartJsDefaultTooltip() {
-  return {
-    backgroundColor: utils.getGrays()['100'],
-    borderColor: utils.getGrays()['300'],
-    borderWidth: 1,
-    titleColor: utils.getGrays().black,
-    callbacks: {
-      labelTextColor: function labelTextColor() {
-        return utils.getGrays().black;
-      }
-    }
-  };
-};
-var getBubbleDataset = function getBubbleDataset(count, rmin, rmax, min, max) {
-  var arr = Array.from(Array(count).keys());
-  return arr.map(function () {
-    return {
-      x: utils.getRandomNumber(min, max),
-      y: utils.getRandomNumber(min, max),
-      r: utils.getRandomNumber(rmin, rmax)
-    };
-  });
-};
-
-/* eslint-disable */
-
-/* -------------------------------------------------------------------------- */
-/*                            Chart Scatter                                   */
-/* -------------------------------------------------------------------------- */
-var productShareDoughnutInit = function productShareDoughnutInit() {
-  var marketShareDoughnutElement = document.getElementById('marketShareDoughnut');
-  var getOptions = function getOptions() {
-    return {
-      type: 'doughnut',
-      data: {
-        labels: ['Flacon', 'Sparrow'],
-        datasets: [{
-          data: [50, 88],
-          backgroundColor: [utils.getColor('primary'), utils.getColor('gray-300')],
-          borderColor: [utils.getColor('primary'), utils.getColor('gray-300')]
-        }]
-      },
-      options: {
-        tooltips: chartJsDefaultTooltip(),
-        rotation: -90,
-        circumference: '180',
-        cutout: '80%',
-        plugins: {
-          legend: {
-            display: false
-          }
-        }
-      }
-    };
-  };
-  chartJsInit(marketShareDoughnutElement, getOptions);
-};
-
-/* -------------------------------------------------------------------------- */
 /*                             Echarts Active Users                           */
 /* -------------------------------------------------------------------------- */
 
@@ -6499,7 +6649,7 @@ var activeUsersChartReportInit = function activeUsersChartReportInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -6655,7 +6805,7 @@ var assignmentScoresInit = function assignmentScoresInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -6729,14 +6879,14 @@ var audienceChartInit = function audienceChartInit() {
   var getDefaultOptions = function getDefaultOptions(data1, data2) {
     return function () {
       return {
-        color: utils.getGrays().white,
+        color: utils.getGrays()['100'],
         tooltip: {
           trigger: 'axis',
           padding: [7, 10],
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -6860,16 +7010,16 @@ var audienceChartInit = function audienceChartInit() {
 };
 
 /* -------------------------------------------------------------------------- */
-/*                      Echarts Total Sales E-commerce                        */
+/*                      Echarts Total Sales Courses                           */
 /* -------------------------------------------------------------------------- */
 
 var avgEnrollmentRateInit = function avgEnrollmentRateInit() {
   var $echartsLineAvgEnrollmentLms = document.querySelector('.echart-avg-enrollment-rate');
   function getFormatter(params) {
-    return params.map(function (_ref15) {
-      var seriesName = _ref15.seriesName,
-        value = _ref15.value,
-        borderColor = _ref15.borderColor;
+    return params.map(function (_ref16) {
+      var seriesName = _ref16.seriesName,
+        value = _ref16.value,
+        borderColor = _ref16.borderColor;
       return "<span class= \"fas fa-circle fs--2\" style=\"color: ".concat(borderColor, "\"></span>\n            <span class='text-600'>\n              ").concat(seriesName, " : <strong>").concat(value, "</strong>\n            </span>");
     }).join('<br/>');
   }
@@ -6887,7 +7037,7 @@ var avgEnrollmentRateInit = function avgEnrollmentRateInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           formatter: function formatter(params) {
@@ -7124,7 +7274,7 @@ var bandwidthSavedInit = function bandwidthSavedInit() {
             show: false
           },
           data: [{
-            value: 97,
+            value: 93,
             detail: {
               offsetCenter: ['7%', '4%']
             }
@@ -7174,7 +7324,7 @@ var basicEchartsInit = function basicEchartsInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -7242,7 +7392,7 @@ var bounceRateChartInit = function bounceRateChartInit() {
     var chart = window.echarts.init($echartsBounceRateChart);
     var getDefaultOptions = function getDefaultOptions() {
       return {
-        color: utils.getGrays().white,
+        color: utils.getGrays()['100'],
         title: {
           text: 'Bounce Rate',
           padding: [5, 0, 0, 0],
@@ -7261,7 +7411,7 @@ var bounceRateChartInit = function bounceRateChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -7374,10 +7524,10 @@ var browsedCoursesInit = function browsedCoursesInit() {
   var $echartsBrowsedCourses = document.querySelector('.echart-browsed-courses');
   var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var tooltipFormatter = function tooltipFormatter(params) {
-    return "\n    <div>\n      <p class='mb-2 text-600'>\n      ".concat(window.dayjs(params[0].axisValue).isValid() ? window.dayjs(params[0].axisValue).format('MMMM YYYY') : params[0].axisValue, "\n      </p>\n      ").concat(params.map(function (_ref16) {
-      var seriesName = _ref16.seriesName,
-        value = _ref16.value,
-        borderColor = _ref16.borderColor;
+    return "\n    <div>\n      <p class='mb-2 text-600'>\n      ".concat(window.dayjs(params[0].axisValue).isValid() ? window.dayjs(params[0].axisValue).format('MMMM YYYY') : params[0].axisValue, "\n      </p>\n      ").concat(params.map(function (_ref17) {
+      var seriesName = _ref17.seriesName,
+        value = _ref17.value,
+        borderColor = _ref17.borderColor;
       return "<span class= \"fas fa-circle fs--2\" style=\"color: ".concat(borderColor, "\"></span>\n            <span class='text-600'>\n              ").concat(seriesName, " : <strong>").concat(value, "</strong>\n            </span>");
     }).join('<br />'), "\n    </div>");
   };
@@ -7427,7 +7577,7 @@ var browsedCoursesInit = function browsedCoursesInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -7546,7 +7696,7 @@ var candleChartInit = function candleChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           position: function position(pos, params, dom, rect, size) {
@@ -7703,7 +7853,7 @@ var closedVsGoalInit = function closedVsGoalInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           formatter: tooltipFormatter,
@@ -7861,7 +8011,7 @@ var courseEnrollmentsInit = function courseEnrollmentsInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays().primary,
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -8057,7 +8207,7 @@ var courseStatusInit = function courseStatusInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -8092,12 +8242,12 @@ var revenueChartInit = function revenueChartInit() {
     }
   };
   var tooltipFormatter = function tooltipFormatter(params) {
-    return "<div class=\"card\">\n                <div class=\"card-header bg-light py-2\">\n                  <h6 class=\"text-600 mb-0\">".concat(params[0].axisValue, "</h6>\n                </div>\n              <div class=\"card-body py-2\">\n                <h6 class=\"text-600 fw-normal\">\n                  <span class=\"fas fa-circle text-primary me-2\"></span>Revenue: \n                  <span class=\"fw-medium\">$").concat(params[0].data, "</span></h6>\n                <h6 class=\"text-600 mb-0 fw-normal\"> \n                  <span class=\"fas fa-circle text-warning me-2\"></span>Revenue Goal: \n                  <span class=\"fw-medium\">$").concat(params[1].data, "</span></h6>\n              </div>\n            </div>");
+    return "<div class=\"card\">\n                <div class=\"card-header bg-body-tertiary py-2\">\n                  <h6 class=\"text-600 mb-0\">".concat(params[0].axisValue, "</h6>\n                </div>\n              <div class=\"card-body py-2\">\n                <h6 class=\"text-600 fw-normal\">\n                  <span class=\"fas fa-circle text-primary me-2\"></span>Revenue: \n                  <span class=\"fw-medium\">$").concat(params[0].data, "</span></h6>\n                <h6 class=\"text-600 mb-0 fw-normal\"> \n                  <span class=\"fas fa-circle text-warning me-2\"></span>Revenue Goal: \n                  <span class=\"fw-medium\">$").concat(params[1].data, "</span></h6>\n              </div>\n            </div>");
   };
   var getDefaultOptions = function getDefaultOptions(data1, data2) {
     return function () {
       return {
-        color: utils.getGrays().white,
+        color: utils.getColors().white,
         tooltip: {
           trigger: 'axis',
           padding: 0,
@@ -8251,7 +8401,7 @@ var echartsCustomerSatisfactionInit = function echartsCustomerSatisfactionInit()
             value: 550,
             name: 'Nagative',
             itemStyle: {
-              color: utils.rgbaColor(utils.getColor('primary'), 0.50)
+              color: utils.rgbaColor(utils.getColor('primary'), 0.5)
             }
           }]
         }],
@@ -8261,7 +8411,7 @@ var echartsCustomerSatisfactionInit = function echartsCustomerSatisfactionInit()
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -8494,8 +8644,8 @@ var echartSetOption = function echartSetOption(chart, userOptions, getDefaultOpt
   var themeController = document.body;
   // Merge user options with lodash
   chart.setOption(window._.merge(getDefaultOptions(), userOptions));
-  themeController.addEventListener('clickControl', function (_ref17) {
-    var control = _ref17.detail.control;
+  themeController.addEventListener('clickControl', function (_ref18) {
+    var control = _ref18.detail.control;
     if (control === 'theme') {
       chart.setOption(window._.merge(getDefaultOptions(), userOptions));
     }
@@ -8583,14 +8733,14 @@ var grossRevenueChartInit = function grossRevenueChartInit() {
           show: false,
           data: ['currentMonth', 'prevMonth']
         },
-        color: utils.getGrays().white,
+        color: utils.getColors().white,
         tooltip: {
           trigger: 'axis',
           padding: [7, 10],
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           formatter: _tooltipFormatter2,
@@ -8802,7 +8952,7 @@ var leadConversionInit = function leadConversionInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -8882,7 +9032,7 @@ var linePaymentChartInit = function linePaymentChartInit() {
           textStyle: {
             fontWeight: 500,
             fontSize: 12,
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           }
         },
         xAxis: {
@@ -8945,10 +9095,10 @@ var linePaymentChartInit = function linePaymentChartInit() {
           }),
           symbol: 'emptyCircle',
           itemStyle: {
-            color: localStorage.getItem('theme') === 'light' ? utils.getGrays().white : utils.getColors().primary
+            color: localStorage.getItem('theme') === 'light' ? utils.getColors().white : utils.getColors().primary
           },
           lineStyle: {
-            color: localStorage.getItem('theme') === 'light' ? utils.rgbaColor(utils.getGrays().white, 0.8) : utils.getColors().primary
+            color: localStorage.getItem('theme') === 'light' ? utils.rgbaColor(utils.getColors().white, 0.8) : utils.getColors().primary
           },
           areaStyle: {
             color: {
@@ -9564,7 +9714,7 @@ var locationBySessionInit = function locationBySessionInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -9664,7 +9814,7 @@ var marketShareEcommerceInit = function marketShareEcommerceInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -9742,7 +9892,7 @@ var marketShareInit = function marketShareInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -9892,7 +10042,7 @@ var marketingExpensesInit = function marketingExpensesInit() {
           trigger: 'item',
           backgroundColor: utils.getGrays()['100'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           formatter: '{b}<br/> {c} ({d}%)'
         },
@@ -9964,7 +10114,7 @@ var mostLeadsInit = function mostLeadsInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -10170,7 +10320,7 @@ var realTimeUsersChartInit = function realTimeUsersChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -10381,7 +10531,7 @@ var reportForThisWeekInit = function reportForThisWeekInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -10531,7 +10681,7 @@ var returningCustomerRateInit = function returningCustomerRateInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -10712,6 +10862,8 @@ var returningCustomerRateInit = function returningCustomerRateInit() {
 
 var salesByPosLocationInit = function salesByPosLocationInit() {
   var ECHART_RADAR_SALES_BY_POS_LOCATION = '.echart-radar-sales-by-pos-location';
+
+  // eslint-disable-next-line
   var $echartsRadarSalesByPosLocation = document.querySelector(ECHART_RADAR_SALES_BY_POS_LOCATION);
   function getformatter(params) {
     //const indicators = ['Marketing','Sales', 'Dev', 'Support', 'Tech', 'Admin']
@@ -10729,7 +10881,7 @@ var salesByPosLocationInit = function salesByPosLocationInit() {
           backgroundColor: utils.getColor('gray-100'),
           borderColor: utils.getColor('gray-300'),
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -10811,7 +10963,7 @@ var salesByPosLocationInit = function salesByPosLocationInit() {
             value: [40, 60, 30, 15, 60, 35],
             name: 'Spending',
             areaStyle: {
-              color: [utils.rgbaColor(utils.getColors().primary, 0.24)]
+              color: utils.rgbaColor(utils.getColors().primary, 0.24)
             },
             symbol: 'circle',
             symbolSize: 8,
@@ -10991,7 +11143,7 @@ var sessionByBrowserChartInit = function sessionByBrowserChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -11600,7 +11752,7 @@ var sessionByCountryMapInit = function sessionByCountryMapInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -11681,7 +11833,7 @@ var sessionByCountryChartInit = function sessionByCountryChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -11847,7 +11999,7 @@ var ticketVolumeChartInit = function ticketVolumeChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -11947,7 +12099,7 @@ var topCustomersChartInit = function topCustomersChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -12065,7 +12217,7 @@ var topProductsInit = function topProductsInit() {
   var ECHART_BAR_TOP_PRODUCTS = '.echart-bar-top-products';
   var $echartBarTopProducts = document.querySelector(ECHART_BAR_TOP_PRODUCTS);
   if ($echartBarTopProducts) {
-    var data = [['product', '2019','2023'], ['Boots4', 43, 85], ['Reign Pro', 83, 73], ['Slick', 86, 62], ['Falcon', 72, 53], ['Sparrow', 80, 50], ['Hideway', 50, 70], ['Freya', 80, 90]];
+    var data = [['product', '2019', '2018'], ['Boots4', 43, 85], ['Reign Pro', 83, 73], ['Slick', 86, 62], ['Falcon', 72, 53], ['Sparrow', 80, 50], ['Hideway', 50, 70], ['Freya', 80, 90]];
     var userOptions = utils.getData($echartBarTopProducts, 'options');
     var chart = window.echarts.init($echartBarTopProducts);
     var getDefaultOptions = function getDefaultOptions() {
@@ -12080,7 +12232,7 @@ var topProductsInit = function topProductsInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -12263,7 +12415,7 @@ var totalOrderInit = function totalOrderInit() {
             width: 3
           },
           itemStyle: {
-            color: utils.getGrays().white,
+            color: utils.getColors().white,
             borderColor: utils.getColors().primary,
             borderWidth: 2
           },
@@ -12313,10 +12465,10 @@ var totalSalesEcommerce = function totalSalesEcommerce() {
   var $echartsLineTotalSalesEcomm = document.querySelector(ECHART_LINE_TOTAL_SALES_ECOMM);
   var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function getFormatter(params) {
-    return params.map(function (_ref18) {
-      var value = _ref18.value,
-        borderColor = _ref18.borderColor,
-        seriesName = _ref18.seriesName;
+    return params.map(function (_ref19) {
+      var value = _ref19.value,
+        borderColor = _ref19.borderColor,
+        seriesName = _ref19.seriesName;
       return "<span class= \"fas fa-circle\" style=\"color: ".concat(borderColor, "\"></span>\n    <span class='text-600'>").concat(seriesName === 'lastMonth' ? 'Last Month' : 'Previous Year', ": ").concat(value, "</span>");
     }).join('<br/>');
   }
@@ -12337,7 +12489,7 @@ var totalSalesEcommerce = function totalSalesEcommerce() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           formatter: function formatter(params) {
@@ -12509,7 +12661,7 @@ var totalSalesInit = function totalSalesInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           formatter: function formatter(params) {
@@ -12729,7 +12881,7 @@ var trafficChannelChartInit = function trafficChannelChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -13454,7 +13606,7 @@ var userByLocationInit = function userByLocationInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           transitionDuration: 0,
@@ -13552,7 +13704,7 @@ var usersByTimeChartInit = function usersByTimeChartInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           formatter: tooltipFormatter
@@ -13625,13 +13777,13 @@ var usersByTimeChartInit = function usersByTimeChartInit() {
             show: false
           },
           itemStyle: {
-            borderColor: utils.getColor('white'),
+            borderColor: utils.getGrays()['100'],
             borderWidth: 3
           },
           emphasis: {
             itemStyle: {
               shadowBlur: 3,
-              shadowColor: utils.rgbaColor(utils.getGrays().black, 0.5)
+              shadowColor: utils.rgbaColor(utils.getColors().emphasis, 0.5)
             }
           }
         }],
@@ -13816,7 +13968,7 @@ var weeklySalesInit = function weeklySalesInit() {
           backgroundColor: utils.getGrays()['100'],
           borderColor: utils.getGrays()['300'],
           textStyle: {
-            color: utils.getColors().dark
+            color: utils.getGrays()['1100']
           },
           borderWidth: 1,
           position: function position(pos, params, dom, rect, size) {
