@@ -44,8 +44,8 @@
   width: 34px;
   height: 34px;
   border: solid 3px transparent;
-  border-top-color: #fff;
-  border-left-color: #fff;
+  border-top-color:  #fff;
+  border-left-color:  #fff;
   border-radius: 50%;
   -webkit-animation: pace-spinner 400ms linear infinite;
   -moz-animation: pace-spinner 400ms linear infinite;
@@ -81,21 +81,5 @@
     z-index: 3000;
     position: fixed;
     top: 0;
-    background-color: #000000;
+    background-color: #0056d3;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
